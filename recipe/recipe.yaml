@@ -1,5 +1,5 @@
 context:
-  version: "2.2.2"
+  version: "2.3.0"
 
 recipe:
   name: usd-exchange-split
@@ -7,10 +7,10 @@ recipe:
 
 source:
   url: https://github.com/NVIDIA-Omniverse/usd-exchange/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: f3937e842d288d7871577f8c9afd16c7a8e62d2a8d8cc0dff8aca2f3c3cc266e
+  sha256: 281798820c5666c355a6e19dcdc1b37114fb49af4d43fcc2730318c85980cdee
 
 build:
-  number: 3
+  number: 0
 
 outputs:
   - package:
