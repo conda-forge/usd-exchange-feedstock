@@ -125,5 +125,6 @@ about:
 
 extra:
   recipe-maintainers:
+    - oursland
     - traversaro
   feedstock-name: usd-exchange
