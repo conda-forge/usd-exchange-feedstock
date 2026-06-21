@@ -35,7 +35,9 @@ outputs:
           then:
             - libgl-devel
             - libglx-devel
-        - openusd
+        # usd-exchange 2.3.0 supports OpenUSD up to 25.11; 26.x removed
+        # ARCH_PRAGMA_DEPRECATED_POSIX_NAME which the bindings rely on
+        - openusd <26
         - python
       # libgl-devel and libglx-devel is just used for CMake reasons, but
       # they are not actually linked, so we can ignore the run_exports
@@ -81,7 +83,7 @@ outputs:
       host:
         - python
         - pybind11
-        - openusd
+        - openusd <26
         - ${{ pin_subpackage('libusd-exchange', exact=True) }}
         - if: linux
           then:
