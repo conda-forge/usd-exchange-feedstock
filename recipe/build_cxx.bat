@@ -14,16 +14,19 @@ cmake -S "%SRC_DIR%" -B build -G Ninja ^
   -DCMAKE_BUILD_TYPE=Release ^
   -DUSDEX_VERSION="%PKG_VERSION%" ^
   -DUSDEX_BUILD_STRING="%PKG_VERSION%" ^
-  -DBUILD_TESTING=OFF
+  -DBUILD_TESTING=ON
 if errorlevel 1 exit /b 1
 
-REM The upstream C++ doctest tests do not compile against OpenUSD >=26.03: the
-REM new VtValueRef implicit constructor hijacks operator<< when doctest
-REM stringifies a USD schema object in CHECK(...), forcing an operator== the
-REM schema lacks. The library itself builds fine; coverage is retained via the
-REM Python unittests and cmake-package-check, so BUILD_TESTING is off here.
 cmake --build build -j%CPU_COUNT%
 if errorlevel 1 exit /b 1
+
+REM The C++ doctest suite is only built against OpenUSD <26 (see cxx/CMakeLists.txt;
+REM it does not compile against 26.x). On OpenUSD >=26 no tests are registered, so
+REM --no-tests=ignore lets ctest succeed instead of erroring on "no tests found".
+if not "%CONDA_BUILD_CROSS_COMPILATION%"=="1" (
+    ctest --test-dir build --output-on-failure --no-tests=ignore
+    if errorlevel 1 exit /b 1
+)
 
 cmake --install build
 if errorlevel 1 exit /b 1

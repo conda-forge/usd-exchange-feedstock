@@ -10,13 +10,15 @@ cmake -S "${SRC_DIR}" -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DUSDEX_VERSION="${PKG_VERSION}" \
   -DUSDEX_BUILD_STRING="${PKG_VERSION}" \
-  -DBUILD_TESTING=OFF
+  -DBUILD_TESTING=ON
 
-# The upstream C++ doctest tests do not compile against OpenUSD >=26.03: the new
-# VtValueRef implicit constructor hijacks operator<< when doctest stringifies a
-# USD schema object in CHECK(...), forcing an operator== the schema lacks. The
-# library itself builds fine; coverage is retained via the Python unittests and
-# cmake-package-check in the recipe test section, so BUILD_TESTING is off here.
 cmake --build build -j"${CPU_COUNT}"
+
+# The C++ doctest suite is only built against OpenUSD <26 (see cxx/CMakeLists.txt;
+# it does not compile against 26.x). On OpenUSD >=26 no tests are registered, so
+# --no-tests=ignore lets ctest succeed instead of erroring on "no tests found".
+if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" != "1" || "${CROSSCOMPILING_EMULATOR:-}" != "" ]]; then
+    ctest --test-dir build --output-on-failure --no-tests=ignore
+fi
 
 cmake --install build
