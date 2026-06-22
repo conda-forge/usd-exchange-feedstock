@@ -10,13 +10,14 @@ if errorlevel 1 exit /b 1
 
 REM The upstream C++ doctest suite does not compile against OpenUSD >=26 (26.x's
 REM new VtValueRef hijacks operator<< during doctest stringification of USD
-REM schema objects). Detect the OpenUSD major version from its header and only
-REM build/run the tests for OpenUSD <26.
-set "PXR_MAJOR="
-for /f "tokens=3" %%i in ('findstr /c:"#define PXR_MAJOR_VERSION " "%LIBRARY_PREFIX%\include\pxr\pxr.h"') do set "PXR_MAJOR=%%i"
-echo Detected OpenUSD major version: '%PXR_MAJOR%'
+REM schema objects). Gate the tests on PXR_VERSION from its header: OpenUSD keeps
+REM PXR_MAJOR_VERSION at 0 and encodes the marketing version in PXR_VERSION, so
+REM "25.11" is 2511 and "26.03" is 2603. Only build/run the tests for <26 (<2600).
+set "PXR_VERSION="
+for /f "tokens=3" %%i in ('findstr /c:"#define PXR_VERSION " "%LIBRARY_PREFIX%\include\pxr\pxr.h"') do set "PXR_VERSION=%%i"
+echo Detected OpenUSD PXR_VERSION: '%PXR_VERSION%'
 set "USDEX_BUILD_TESTING=OFF"
-if defined PXR_MAJOR if %PXR_MAJOR% LSS 26 set "USDEX_BUILD_TESTING=ON"
+if defined PXR_VERSION if %PXR_VERSION% LSS 2600 set "USDEX_BUILD_TESTING=ON"
 
 cmake -S "%SRC_DIR%" -B build -G Ninja ^
   %CMAKE_ARGS% ^

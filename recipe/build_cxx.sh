@@ -6,11 +6,12 @@ cp -r "${RECIPE_DIR}/cxx/cmake" "${SRC_DIR}/cmake"
 
 # The upstream C++ doctest suite does not compile against OpenUSD >=26 (26.x's
 # new VtValueRef hijacks operator<< during doctest stringification of USD schema
-# objects). Detect the OpenUSD major version from its header and only build/run
-# the tests for OpenUSD <26.
-PXR_MAJOR=$(sed -n 's/^#define PXR_MAJOR_VERSION \([0-9]*\).*/\1/p' "${PREFIX}/include/pxr/pxr.h")
-echo "Detected OpenUSD major version: '${PXR_MAJOR}'"
-if [[ -n "${PXR_MAJOR}" && "${PXR_MAJOR}" -lt 26 ]]; then
+# objects). Gate the tests on PXR_VERSION from its header: OpenUSD keeps
+# PXR_MAJOR_VERSION at 0 and encodes the marketing version in PXR_VERSION, so
+# "25.11" is 2511 and "26.03" is 2603. Only build/run the tests for <26 (<2600).
+PXR_VERSION=$(sed -n 's/^#define PXR_VERSION \([0-9]*\).*/\1/p' "${PREFIX}/include/pxr/pxr.h")
+echo "Detected OpenUSD PXR_VERSION: '${PXR_VERSION}'"
+if [[ -n "${PXR_VERSION}" && "${PXR_VERSION}" -lt 2600 ]]; then
     BUILD_TESTING=ON
 else
     BUILD_TESTING=OFF
