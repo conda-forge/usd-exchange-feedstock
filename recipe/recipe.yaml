@@ -32,7 +32,6 @@ outputs:
         - ${{ stdlib('c') }}
         - ${{ compiler('cxx') }}
         - cmake
-        - doctest
         - ninja
       host:
         - if: linux
