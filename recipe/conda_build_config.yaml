@@ -1,0 +1,13 @@
+# Build usd-exchange against multiple OpenUSD versions. Each value produces a
+# separate build variant; because `openusd` is listed bare in the host
+# requirements, it is pinned to the variant value per build (the same mechanism
+# that pins `python`). The C++ doctest suite is enabled only for OpenUSD <26
+# (see build_cxx.sh / build_cxx.bat), so the 26.x variants build without it.
+#
+# NOTE: run `conda smithy rerender` after editing this file to regenerate the
+# .ci_support matrix. Each listed OpenUSD version must be published on
+# conda-forge (all of 25.11, 26.03 and 26.05 currently have py3.10-3.14 builds).
+openusd:
+  - "25.11"
+  - "26.03"
+  - "26.05"
