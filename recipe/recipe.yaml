@@ -8,9 +8,13 @@ recipe:
 source:
   url: https://github.com/NVIDIA-Omniverse/usd-exchange/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 281798820c5666c355a6e19dcdc1b37114fb49af4d43fcc2730318c85980cdee
+  patches:
+    # OpenUSD 26.03 renamed ARCH_PRAGMA_DEPRECATED_POSIX_NAME to
+    # ARCH_PRAGMA_DEPRECATED; feature-test for both names.
+    - nameAlgoBindings_pragma_26.patch
 
 build:
-  number: 0
+  number: 1
 
 outputs:
   - package:
@@ -35,9 +39,7 @@ outputs:
           then:
             - libgl-devel
             - libglx-devel
-        # usd-exchange 2.3.0 supports OpenUSD up to 25.11; 26.x removed
-        # ARCH_PRAGMA_DEPRECATED_POSIX_NAME which the bindings rely on
-        - openusd <26
+        - openusd
         - python
       # libgl-devel and libglx-devel is just used for CMake reasons, but
       # they are not actually linked, so we can ignore the run_exports
@@ -83,7 +85,7 @@ outputs:
       host:
         - python
         - pybind11
-        - openusd <26
+        - openusd
         - ${{ pin_subpackage('libusd-exchange', exact=True) }}
         - if: linux
           then:
