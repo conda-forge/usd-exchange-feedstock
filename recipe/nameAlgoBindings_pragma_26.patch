@@ -1,0 +1,22 @@
+From: conda-forge
+Subject: [PATCH] Support OpenUSD 26.03+ ARCH_PRAGMA_DEPRECATED rename
+
+OpenUSD 26.03 renamed ARCH_PRAGMA_DEPRECATED_POSIX_NAME to
+ARCH_PRAGMA_DEPRECATED (identical body, disables MSVC C4996). The old
+name no longer exists in pxr/base/arch/pragmas.h, so use a feature test
+to remain compatible with both <26 and >=26.03.
+
+--- a/source/core/python/bindings/NameAlgoBindings.h
++++ b/source/core/python/bindings/NameAlgoBindings.h
+@@ -601,6 +601,10 @@
+
+     // FUTURE: Remove when the deprecated ValidChildNameCache class is removed
+     ARCH_PRAGMA_PUSH
++#if defined(ARCH_PRAGMA_DEPRECATED_POSIX_NAME)
+     ARCH_PRAGMA_DEPRECATED_POSIX_NAME
++#else
++    ARCH_PRAGMA_DEPRECATED
++#endif
+
+     ::class_<ValidChildNameCache>(
+         m,
