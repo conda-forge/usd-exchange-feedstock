@@ -14,7 +14,7 @@ source:
     - nameAlgoBindings_pragma_26.patch
 
 build:
-  number: 1
+  number: 2
 
 outputs:
   - package:
