@@ -140,12 +140,11 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/usd-exchange
 )
 
-# The upstream C++ doctest suite does not compile against OpenUSD >=26: 26.x's
-# new VtValueRef has a greedy implicit constructor that hijacks operator<< when
-# doctest stringifies a USD schema object in CHECK(...), forcing an operator==
-# the schema type does not define. Only build the tests against OpenUSD <26;
-# PXR_MAJOR_VERSION is provided by find_package(pxr) above.
-if(BUILD_TESTING AND PXR_MAJOR_VERSION LESS 26)
+# The upstream C++ doctest suite does not compile against OpenUSD >=26 (26.x's
+# new VtValueRef hijacks operator<< during doctest stringification of USD schema
+# objects). The build scripts detect the OpenUSD version from pxr/pxr.h and only
+# pass BUILD_TESTING=ON for OpenUSD <26.
+if(BUILD_TESTING)
     find_package(doctest CONFIG REQUIRED)
     file(GLOB_RECURSE USDEX_CORE_DOCTEST_SOURCES CONFIGURE_DEPENDS source/core/tests/doctest/*.cpp)
     add_executable(usdex_core_doctest ${USDEX_CORE_DOCTEST_SOURCES})
