@@ -32,6 +32,8 @@ outputs:
         - ${{ stdlib('c') }}
         - ${{ compiler('cxx') }}
         - cmake
+        # only used to build the C++ doctest suite against OpenUSD <26
+        - doctest
         - ninja
       host:
         - if: linux
