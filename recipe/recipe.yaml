@@ -1,5 +1,5 @@
 context:
-  version: "2.3.0"
+  version: "3.0.1"
 
 recipe:
   name: usd-exchange-split
@@ -7,14 +7,14 @@ recipe:
 
 source:
   url: https://github.com/NVIDIA-Omniverse/usd-exchange/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 281798820c5666c355a6e19dcdc1b37114fb49af4d43fcc2730318c85980cdee
+  sha256: 4e0a8b387aea521ceac3a3e07da740a74e2a2a15a9dc490295fffff48a389e7c
   patches:
     # OpenUSD 26.03 renamed ARCH_PRAGMA_DEPRECATED_POSIX_NAME to
     # ARCH_PRAGMA_DEPRECATED; feature-test for both names.
     - nameAlgoBindings_pragma_26.patch
 
 build:
-  number: 2
+  number: 0
 
 outputs:
   - package:
