@@ -79,7 +79,9 @@ outputs:
         from_package:
           - pybind11-abi
       run:
-        # Windows SDK DLLs import python3xx.dll directly.
+        # OpenUSD links Python into DLLs on Windows; Unix shared libraries use
+        # dynamic lookup, with libpython linked only into executable consumers.
+        # https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.08/cmake/defaults/Packages.cmake#L69-L76
         - if: win
           then: python
       run_exports:
