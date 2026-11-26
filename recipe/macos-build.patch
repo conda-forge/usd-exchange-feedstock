@@ -1,0 +1,65 @@
+# Use dyld-relative rpaths and guard ELF-only hardening/linker flags.
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f4d8db8..43c6b21 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -80,7 +80,12 @@ include(GNUInstallDirs)  # early: CMAKE_INSTALL_LIBDIR/BINDIR feed the rpaths +
+ # bake $ORIGIN-relative rpaths (not CMake's default absolute build rpath) so the package is relocatable; the
+ # default suits libs beside their USD siblings, per-target overrides below handle bin/ and the python/ bindings
+ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+-set(CMAKE_INSTALL_RPATH "$ORIGIN")
++if(APPLE)
++    set(USDEX_RPATH_ORIGIN "@loader_path")
++else()
++    set(USDEX_RPATH_ORIGIN "$ORIGIN")
++endif()
++set(CMAKE_INSTALL_RPATH "${USDEX_RPATH_ORIGIN}")
+ 
+ include(UsdexCompilerConfig)
+ 
+@@ -90,6 +95,7 @@ include(UsdexCompilerConfig)
+ # consumers inherit are in usdex_build_options.
+ add_library(usdex_sdk_build_options INTERFACE)
+ set(_gnu "$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>")
++set(_elf "$<AND:${_gnu},$<NOT:$<PLATFORM_ID:Darwin>>>")
+ set(_msvc "$<CXX_COMPILER_ID:MSVC>")
+ set(_release "$<CONFIG:Release>")
+ set(_debug "$<CONFIG:Debug>")
+@@ -97,12 +103,12 @@ set(_x86_64 "$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>")
+ target_compile_options(usdex_sdk_build_options INTERFACE
+     "$<${_gnu}:-fdiagnostics-color;-fvisibility=hidden;-Wall;-Wextra;-Wvla;-Wshadow;-Wundef;-Wconversion;-Werror;-fstack-protector-strong>"
+     "$<$<AND:${_gnu},${_debug}>:-g>"
+-    "$<$<AND:${_gnu},${_x86_64}>:-fstack-clash-protection>"
++    "$<$<AND:${_elf},${_x86_64}>:-fstack-clash-protection>"
+     "$<${_msvc}:/W4;/Zi;/WX;/MP;/guard:cf>"
+ )
+ target_link_options(usdex_sdk_build_options INTERFACE
+-    "$<${_gnu}:-Wl,-z,relro;-Wl,-z,now>"
+-    "$<$<AND:${_gnu},${_release}>:-Wl,-O1;-Wl,--gc-sections;-Wl,-s>"
++    "$<${_elf}:-Wl,-z,relro;-Wl,-z,now>"
++    "$<$<AND:${_elf},${_release}>:-Wl,-O1;-Wl,--gc-sections;-Wl,-s>"
+     "$<${_msvc}:/guard:cf>"
+ )
+ 
+@@ -184,7 +190,7 @@ if(USDEX_BUILD_TESTS)
+     file(GLOB USDEX_CORE_TEST_SOURCES CONFIGURE_DEPENDS source/core/tests/doctest/*.cpp)
+     add_executable(test_usdex_core ${USDEX_CORE_TEST_SOURCES})
+     # bin/ -> sibling libs one dir up
+-    set_target_properties(test_usdex_core PROPERTIES INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
++    set_target_properties(test_usdex_core PROPERTIES INSTALL_RPATH "${USDEX_RPATH_ORIGIN}/../${CMAKE_INSTALL_LIBDIR}")
+     target_link_libraries(test_usdex_core PRIVATE usdex_build_options usdex_sdk_build_options usdex_usd_headers usdex_core)
+     target_include_directories(test_usdex_core SYSTEM PRIVATE "${USDEX_CXXOPTS_INCLUDE_DIR}" "${USDEX_DOCTEST_INCLUDE_DIR}")
+     usdex_target_link_usd(test_usdex_core arch gf sdf tf usd usdGeom usdPhysics usdUtils vt)
+diff --git a/cmake/UsdexPythonModule.cmake b/cmake/UsdexPythonModule.cmake
+index 94d5cdb..6c70eb4 100644
+--- a/cmake/UsdexPythonModule.cmake
++++ b/cmake/UsdexPythonModule.cmake
+@@ -33,7 +33,7 @@ function(usdex_add_python_module target)
+     file(RELATIVE_PATH _usdex_lib_rpath "${_usdex_module_dir}" "${_usdex_lib_dir}")
+ 
+     set_target_properties(${target} PROPERTIES OUTPUT_NAME "_${ARG_MODULE_NAME}"
+-        INSTALL_RPATH "$ORIGIN/${_usdex_lib_rpath}")
++        INSTALL_RPATH "${USDEX_RPATH_ORIGIN}/${_usdex_lib_rpath}")
+ 
+     target_compile_definitions(${target} PRIVATE "MODULE_NAME=${ARG_MODULE_NAME}")
+     target_include_directories(${target} PRIVATE "${CMAKE_SOURCE_DIR}/include")

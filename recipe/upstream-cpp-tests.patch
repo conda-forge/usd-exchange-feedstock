@@ -1,0 +1,26 @@
+# Run the upstream C++ suite with CTest from the build tree; do not ship the test executable.
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -189,11 +189,13 @@
+ 
+     file(GLOB USDEX_CORE_TEST_SOURCES CONFIGURE_DEPENDS source/core/tests/doctest/*.cpp)
+     add_executable(test_usdex_core ${USDEX_CORE_TEST_SOURCES})
+-    # bin/ -> sibling libs one dir up
+-    set_target_properties(test_usdex_core PROPERTIES INSTALL_RPATH "${USDEX_RPATH_ORIGIN}/../${CMAKE_INSTALL_LIBDIR}")
++    # Tests run from the build tree and are not installed.
++    set_target_properties(test_usdex_core PROPERTIES BUILD_WITH_INSTALL_RPATH OFF)
+     target_link_libraries(test_usdex_core PRIVATE usdex_build_options usdex_sdk_build_options usdex_usd_headers usdex_core)
+     target_include_directories(test_usdex_core SYSTEM PRIVATE "${USDEX_CXXOPTS_INCLUDE_DIR}" "${USDEX_DOCTEST_INCLUDE_DIR}")
+     usdex_target_link_usd(test_usdex_core arch gf sdf tf usd usdGeom usdPhysics usdUtils vt)
++    enable_testing()
++    add_test(NAME usdex-core-doctest COMMAND test_usdex_core)
+ endif()
+ 
+ # the packman config shipped in dev/ so consumers can fetch the runtime deps install_usdex needs
+@@ -257,6 +259,3 @@
+ # only compare the requested version against the built one, so it is independent of the package name.
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/usdex-config-version.cmake"
+     DESTINATION ${USDEX_INSTALL_COMPAT_CMAKEDIR} RENAME usd-exchange-config-version.cmake)
+-if(TARGET test_usdex_core)
+-    install(TARGETS test_usdex_core RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+-endif()

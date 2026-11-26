@@ -1,3 +1,5 @@
+DOCKER_PLATFORM:
+- linux/amd64
 c_stdlib:
 - sysroot
 c_stdlib_version:
@@ -16,7 +18,11 @@ pin_run_as_build:
   python:
     min_pin: x.x
     max_pin: x.x
+pybind11_abi:
+- '11'
 python:
 - 3.13.* *_cp313
 target_platform:
 - linux-64
+tbb_devel:
+- '2023'

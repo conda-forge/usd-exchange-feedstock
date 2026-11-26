@@ -1,0 +1,5 @@
+find_package(usdex 3.0.1 REQUIRED)
+find_package(usdex 3.0.1 REQUIRED)
+add_executable(consumer main.cpp)
+target_link_libraries(consumer PRIVATE usdex::core usdex::rtx)
+add_test(NAME native-consumer COMMAND consumer)

@@ -1,5 +1,8 @@
 context:
-  version: "2.3.0"
+  version: "3.0.1"
+  # Reuse these exact patterns in the owning output and runtime exclusions.
+  python_files: "**/site-packages/**"
+  devel_files: "${{ 'Library/' if win else '' }}{include/**,lib/cmake/**,lib/pkgconfig/**,lib/*.a,lib/*.lib,share/pkgconfig/**,share/doc/**,share/man/**,dev/**,bin/*.pdb}"
 
 recipe:
   name: usd-exchange-split
@@ -7,107 +10,195 @@ recipe:
 
 source:
   url: https://github.com/NVIDIA-Omniverse/usd-exchange/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 281798820c5666c355a6e19dcdc1b37114fb49af4d43fcc2730318c85980cdee
+  sha256: 4e0a8b387aea521ceac3a3e07da740a74e2a2a15a9dc490295fffff48a389e7c
   patches:
-    # OpenUSD 26.03 renamed ARCH_PRAGMA_DEPRECATED_POSIX_NAME to
-    # ARCH_PRAGMA_DEPRECATED; feature-test for both names.
-    - nameAlgoBindings_pragma_26.patch
+    - use-pxr-targets.patch
+    - macos-build.patch
+    - remove-dev-tools.patch
+    - disable-werror.patch
+    - namespace-alias.patch
+    - upstream-cpp-tests.patch
+    - macos-typeinfo-visibility.patch
 
 build:
-  number: 2
+  number: 0
 
 outputs:
-  - package:
-      name: libusd-exchange
+  # Build all artifacts together, against the same Python and OpenUSD ABI.
+  - staging:
+      name: usd-exchange-build
     build:
+      # Remove generated host-dependency bytecode before caching the install.
+      # Package bytecode is regenerated from the output's own Python sources.
       script:
         - if: unix
-          then: build_cxx.sh
+          then:
+            - bash "${RECIPE_DIR}/build.sh"
+            - cmake -P "${RECIPE_DIR}/clean_bytecode.cmake"
+            - cmake -DUSDEX_PACKAGE_VERSION=${{ version }} -P "${RECIPE_DIR}/install_python_metadata.cmake"
         - if: win
-          then: build_cxx.bat
+          then:
+            - call "%RECIPE_DIR%\build.bat"
+            - if errorlevel 1 exit /b 1
+            - cmake -P "%RECIPE_DIR%\clean_bytecode.cmake"
+            - cmake -DUSDEX_PACKAGE_VERSION=${{ version }} -P "%RECIPE_DIR%\install_python_metadata.cmake"
     requirements:
-      run_exports:
-        - ${{ pin_subpackage('libusd-exchange', upper_bound='x.x') }}
       build:
         - ${{ stdlib('c') }}
         - ${{ compiler('cxx') }}
         - cmake
-        # only used to build the C++ doctest suite against OpenUSD <26
-        - doctest
         - ninja
-      host:
-        - if: linux
+        - if: build_platform != target_platform
           then:
-            - libgl-devel
-            - libglx-devel
+            - cross-python_${{ target_platform }}
+            - python
+      host:
         - openusd
         - python
-      # libgl-devel and libglx-devel is just used for CMake reasons, but
-      # they are not actually linked, so we can ignore the run_exports
+        - pybind11
+        - pybind11-abi
+        - tbb-devel
+        - doctest
+        - cxxopts
+
+  - package:
+      name: libusd-exchange
+    inherit: usd-exchange-build
+    build:
+      dynamic_linking:
+        overlinking_behavior: error
+      # Catch-all: new installed files stay here unless assigned to Python/devel.
+      files:
+        include:
+          - "**"
+        exclude:
+          - "${{ python_files }}"
+          - "${{ devel_files }}"
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+      host:
+        - openusd
+        - python
+        - if: win
+          then: libpython
       ignore_run_exports:
         from_package:
-          - if: linux
-            then:
-              - libgl-devel
-              - libglx-devel
+          - pybind11-abi
+      run:
+        # OpenUSD links Python into DLLs on Windows; Unix shared libraries use
+        # dynamic lookup, with libpython linked only into executable consumers.
+        # https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.08/cmake/defaults/Packages.cmake#L69-L76
+        - if: win
+          then: python
+      run_exports:
+        - ${{ pin_subpackage('libusd-exchange', upper_bound='x.x') }}
+    tests:
+      - package_contents:
+          lib:
+            - ${{ 'usdex_core.dll' if win else 'usdex_core' }}
+            - ${{ 'usdex_rtx.dll' if win else 'usdex_rtx' }}
+          files:
+            not_exists:
+              - "${{ python_files }}"
+              - "${{ devel_files }}"
+              - ${{ 'Library/' if win else '' }}bin/test_usdex_core*
+
+  - package:
+      name: libusd-exchange-devel
+    inherit: usd-exchange-build
+    build:
+      files:
+        include:
+          - "${{ devel_files }}"
+        # Python owns its whole directory, including any future static helpers.
+        exclude:
+          - "${{ python_files }}"
+    requirements:
+      ignore_run_exports:
+        from_package:
+          - pybind11-abi
+      run:
+        - ${{ pin_subpackage('libusd-exchange', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libusd-exchange', upper_bound='x.x') }}
     tests:
       - package_contents:
           include:
             - usdex/core/Core.h
             - usdex/rtx/MaterialAlgo.h
-          lib:
-            - usdex_core
-            - usdex_rtx
+          files:
+            exists:
+              - ${{ 'Library/' if win else '' }}lib/cmake/usdex/usdex-config.cmake
+              - ${{ 'Library/' if win else '' }}lib/cmake/usd-exchange/usd-exchange-config.cmake
+            not_exists:
+              - "${{ python_files }}"
+              - ${{ 'Library/bin/usdex_*.dll' if win else 'lib/libusdex_*.so*' }}
+              - lib/libusdex_*.dylib
+              - ${{ 'Library/' if win else '' }}dev/**
       - script:
-          - cmake-package-check usd-exchange --targets usd-exchange::usdex-core usd-exchange::usdex-rtx
+          - cmake-package-check usdex --targets usdex::core usdex::rtx
+          - cmake-package-check usd-exchange --targets usdex::core usdex::rtx
+          # Match the SDK deployment target; compiler activation may default to macOS 10.9.
+          - cmake -S test-consumer -B consumer-build -G Ninja -DCMAKE_BUILD_TYPE=Release ${{ '-DCMAKE_OSX_DEPLOYMENT_TARGET=' ~ c_stdlib_version if osx else '' }}
+          - cmake --build consumer-build --config Release
+          - ctest --test-dir consumer-build -C Release --output-on-failure
+        files:
+          recipe:
+            - test-consumer/
         requirements:
           run:
             - cmake-package-check
+            - ninja
+            - python
             - ${{ compiler('cxx') }}
-            - if: linux
-              then:
-                - libgl-devel
-                - libglx-devel
 
   - package:
       name: usd-exchange
+    inherit: usd-exchange-build
     build:
-      script:
-        - if: unix
-          then: build_py.sh
-        - if: win
-          then: build_py.bat
+      dynamic_linking:
+        overlinking_behavior: error
+      files:
+        - "${{ python_files }}"
     requirements:
       build:
         - ${{ stdlib('c') }}
-        - ${{ compiler('cxx') }}
-        - cmake
-        - ninja
       host:
         - python
-        - pybind11
+        - if: win
+          then: libpython
         - openusd
         - ${{ pin_subpackage('libusd-exchange', exact=True) }}
-        - if: linux
-          then:
-            - libgl-devel
-            - libglx-devel
       run:
         - python
         - ${{ pin_subpackage('libusd-exchange', exact=True) }}
-      # libgl-devel and libglx-devel is just used for CMake reasons, but
-      # they are not actually linked, so we can ignore the run_exports
-      ignore_run_exports:
-        from_package:
-          - if: linux
-            then:
-              - libgl-devel
-              - libglx-devel
     tests:
+      - package_contents:
+          site_packages:
+            - usdex/core/__init__.py
+            - usdex/rtx/__init__.py
+            - usdex/test/__init__.py
+            - usd_exchange-${{ version }}.dist-info/METADATA
+            - usd_exchange-${{ version }}.dist-info/INSTALLER
+          files:
+            not_exists:
+              - ${{ 'Library/' if win else '' }}include/usdex/**
+              - ${{ 'Library/' if win else '' }}lib/cmake/**
+              - ${{ 'Library/' if win else '' }}dev/**
       - python:
           imports:
             - usdex.core
             - usdex.rtx
+      - script:
+          - python -W error::RuntimeWarning -c "import usdex.core; import usdex.rtx"
+          - python check_pip_metadata.py ${{ version }}
+        files:
+          recipe:
+            - check_pip_metadata.py
+        requirements:
+          run:
+            - pip
       - files:
           source:
             - CHANGELOG.md

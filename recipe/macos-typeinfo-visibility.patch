@@ -1,0 +1,17 @@
+# Preserve shared OpenUSD RTTI identity across macOS executable/dylib boundaries.
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -100,8 +100,12 @@
+ set(_release "$<CONFIG:Release>")
+ set(_debug "$<CONFIG:Debug>")
+ set(_x86_64 "$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},x86_64>")
++# OpenUSD types need coalesced RTTI across dylibs on macOS. Hidden typeinfo
++# breaks TfEnum comparisons and VtValue metadata conversions.
++# https://github.com/PixarAnimationStudios/OpenUSD/issues/1475
+ target_compile_options(usdex_sdk_build_options INTERFACE
+-    "$<${_gnu}:-fdiagnostics-color;-fvisibility=hidden;-Wall;-Wextra;-Wvla;-Wshadow;-Wundef;-Wconversion;-fstack-protector-strong>"
++    "$<${_gnu}:-fdiagnostics-color;-Wall;-Wextra;-Wvla;-Wshadow;-Wundef;-Wconversion;-fstack-protector-strong>"
++    "$<${_elf}:-fvisibility=hidden>"
+     "$<$<AND:${_gnu},${_debug}>:-g>"
+     "$<$<AND:${_elf},${_x86_64}>:-fstack-clash-protection>"
+     "$<${_msvc}:/W4;/Zi;/MP;/guard:cf>"

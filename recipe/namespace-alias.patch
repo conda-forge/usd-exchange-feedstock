@@ -1,0 +1,32 @@
+# Apply upstream's namespace-alias guard to Clang as well as MSVC.
+--- a/include/usdex/core/Api.h
++++ b/include/usdex/core/Api.h
+@@ -49,15 +49,15 @@
+ #endif
+ 
+ // Allow consumers to use `pxr::` regardless of PXR_NS value.
+-// MSVC rejects redundant namespace aliases (C2386), so on Windows we detect
+-// whether PXR_NS is already "pxr" and skip the alias when it would be redundant.
+-// GCC/Clang accept redundant aliases per the C++ standard.
++// Skip the alias when PXR_NS is already "pxr": Clang and MSVC reject an
++// alias that redefines an existing namespace.
+ #include <pxr/base/arch/defines.h>
+ #include <pxr/pxr.h>
+ #if PXR_USE_NAMESPACES
+ #if defined(ARCH_OS_WINDOWS)
+ #pragma warning(push)
+ #pragma warning(disable : 4668)
++#endif
+ #define USDEX_PP_CAT_IMPL(a, b) a##b
+ #define USDEX_PP_CAT(a, b) USDEX_PP_CAT_IMPL(a, b)
+ #define USDEX_PXR_NS_IS_pxr 1
+@@ -67,8 +67,7 @@
+ #undef USDEX_PXR_NS_IS_pxr
+ #undef USDEX_PP_CAT
+ #undef USDEX_PP_CAT_IMPL
++#if defined(ARCH_OS_WINDOWS)
+ #pragma warning(pop)
+-#else
+-namespace pxr = ::PXR_NS;
+ #endif
+ #endif // PXR_USE_NAMESPACES
