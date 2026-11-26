@@ -21,7 +21,7 @@ source:
     - macos-typeinfo-visibility.patch
 
 build:
-  number: 0
+  number: 1
 
 outputs:
   # Build all artifacts together, against the same Python and OpenUSD ABI.
