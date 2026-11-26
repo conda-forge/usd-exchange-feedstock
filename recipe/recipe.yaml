@@ -18,6 +18,7 @@ source:
     - disable-werror.patch
     - namespace-alias.patch
     - upstream-cpp-tests.patch
+    - macos-typeinfo-visibility.patch
 
 build:
   number: 0
