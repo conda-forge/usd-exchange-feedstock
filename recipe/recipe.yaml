@@ -30,11 +30,13 @@ outputs:
           then:
             - bash "${RECIPE_DIR}/build.sh"
             - cmake -P "${RECIPE_DIR}/clean_bytecode.cmake"
+            - cmake -DUSDEX_PACKAGE_VERSION=${{ version }} -P "${RECIPE_DIR}/install_python_metadata.cmake"
         - if: win
           then:
             - call "%RECIPE_DIR%\build.bat"
             - if errorlevel 1 exit /b 1
             - cmake -P "%RECIPE_DIR%\clean_bytecode.cmake"
+            - cmake -DUSDEX_PACKAGE_VERSION=${{ version }} -P "%RECIPE_DIR%\install_python_metadata.cmake"
     requirements:
       build:
         - ${{ stdlib('c') }}
@@ -77,7 +79,9 @@ outputs:
         from_package:
           - pybind11-abi
       run:
-        - openusd
+        # Windows SDK DLLs import python3xx.dll directly.
+        - if: win
+          then: python
       run_exports:
         - ${{ pin_subpackage('libusd-exchange', upper_bound='x.x') }}
     tests:
@@ -125,7 +129,7 @@ outputs:
       - script:
           - cmake-package-check usdex --targets usdex::core usdex::rtx
           - cmake-package-check usd-exchange --targets usdex::core usdex::rtx
-          - cmake -S test-consumer -B consumer-build
+          - cmake -S test-consumer -B consumer-build -G Ninja
           - cmake --build consumer-build --config Release
           - ctest --test-dir consumer-build -C Release --output-on-failure
         files:
@@ -134,6 +138,7 @@ outputs:
         requirements:
           run:
             - cmake-package-check
+            - ninja
             - python
             - ${{ compiler('cxx') }}
 
@@ -163,6 +168,8 @@ outputs:
             - usdex/core/__init__.py
             - usdex/rtx/__init__.py
             - usdex/test/__init__.py
+            - usd_exchange-${{ version }}.dist-info/METADATA
+            - usd_exchange-${{ version }}.dist-info/INSTALLER
           files:
             not_exists:
               - ${{ 'Library/' if win else '' }}include/usdex/**
@@ -174,6 +181,13 @@ outputs:
             - usdex.rtx
       - script:
           - python -W error::RuntimeWarning -c "import usdex.core; import usdex.rtx"
+          - python check_pip_metadata.py ${{ version }}
+        files:
+          recipe:
+            - check_pip_metadata.py
+        requirements:
+          run:
+            - pip
       - files:
           source:
             - CHANGELOG.md
