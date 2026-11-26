@@ -15,6 +15,7 @@ source:
     - use-pxr-targets.patch
     - macos-build.patch
     - remove-dev-tools.patch
+    - disable-werror.patch
 
 build:
   number: 0
