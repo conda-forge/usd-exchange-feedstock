@@ -16,6 +16,7 @@ source:
     - macos-build.patch
     - remove-dev-tools.patch
     - disable-werror.patch
+    - namespace-alias.patch
 
 build:
   number: 0
@@ -133,7 +134,7 @@ outputs:
       - script:
           - cmake-package-check usdex --targets usdex::core usdex::rtx
           - cmake-package-check usd-exchange --targets usdex::core usdex::rtx
-          - cmake -S test-consumer -B consumer-build -G Ninja
+          - cmake -S test-consumer -B consumer-build -G Ninja -DCMAKE_BUILD_TYPE=Release
           - cmake --build consumer-build --config Release
           - ctest --test-dir consumer-build -C Release --output-on-failure
         files:
