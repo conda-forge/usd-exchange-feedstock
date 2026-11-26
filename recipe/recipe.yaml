@@ -134,7 +134,8 @@ outputs:
       - script:
           - cmake-package-check usdex --targets usdex::core usdex::rtx
           - cmake-package-check usd-exchange --targets usdex::core usdex::rtx
-          - cmake -S test-consumer -B consumer-build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          # Match the SDK deployment target; compiler activation may default to macOS 10.9.
+          - cmake -S test-consumer -B consumer-build -G Ninja -DCMAKE_BUILD_TYPE=Release ${{ '-DCMAKE_OSX_DEPLOYMENT_TARGET=' ~ c_stdlib_version if osx else '' }}
           - cmake --build consumer-build --config Release
           - ctest --test-dir consumer-build -C Release --output-on-failure
         files:
