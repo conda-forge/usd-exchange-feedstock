@@ -1,0 +1,18 @@
+# Conda supplies runtime dependencies; omit the standalone NVIDIA deployment tooling.
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -251,14 +251,6 @@
+ # only compare the requested version against the built one, so it is independent of the package name.
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/usdex-config-version.cmake"
+     DESTINATION ${USDEX_INSTALL_COMPAT_CMAKEDIR} RENAME usd-exchange-config-version.cmake)
+-# dev/ tooling consumers use to run install_usdex (not part of the find_package contract)
+-install(
+-    DIRECTORY tools/repoman tools/vscode tools/packman
+-    DESTINATION dev/tools
+-    PATTERN "__pycache__" EXCLUDE
+-    PATTERN "*.pyc" EXCLUDE
+-)
+-install(FILES "${CMAKE_BINARY_DIR}/config.packman.xml" DESTINATION dev/tools/packman)
+ if(TARGET test_usdex_core)
+     install(TARGETS test_usdex_core RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ endif()

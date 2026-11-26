@@ -14,6 +14,7 @@ source:
   patches:
     - use-pxr-targets.patch
     - macos-build.patch
+    - remove-dev-tools.patch
 
 build:
   number: 0
@@ -123,11 +124,11 @@ outputs:
             exists:
               - ${{ 'Library/' if win else '' }}lib/cmake/usdex/usdex-config.cmake
               - ${{ 'Library/' if win else '' }}lib/cmake/usd-exchange/usd-exchange-config.cmake
-              - ${{ 'Library/' if win else '' }}dev/tools/packman/config.packman.xml
             not_exists:
               - "${{ python_files }}"
               - ${{ 'Library/bin/usdex_*.dll' if win else 'lib/libusdex_*.so*' }}
               - lib/libusdex_*.dylib
+              - ${{ 'Library/' if win else '' }}dev/**
       - script:
           - cmake-package-check usdex --targets usdex::core usdex::rtx
           - cmake-package-check usd-exchange --targets usdex::core usdex::rtx
