@@ -46,8 +46,7 @@ outputs:
             - cross-python_${{ target_platform }}
             - python
       host:
-        # Build 2 is the first MaterialX-enabled OpenUSD 26.08 build.
-        - openusd >=26.08,<26.09.0a0 [build_number=">=2"]
+        - openusd
         - python
         - pybind11
         - pybind11-abi
@@ -70,7 +69,7 @@ outputs:
       build:
         - ${{ stdlib('c') }}
       host:
-        - openusd >=26.08,<26.09.0a0 [build_number=">=2"]
+        - openusd
         - python
         - if: win
           then: libpython
@@ -78,7 +77,7 @@ outputs:
         from_package:
           - pybind11-abi
       run:
-        - openusd >=26.08,<26.09.0a0 [build_number=">=2"]
+        - openusd
       run_exports:
         - ${{ pin_subpackage('libusd-exchange', upper_bound='x.x') }}
     tests:
@@ -153,7 +152,7 @@ outputs:
         - python
         - if: win
           then: libpython
-        - openusd >=26.08,<26.09.0a0 [build_number=">=2"]
+        - openusd
         - ${{ pin_subpackage('libusd-exchange', exact=True) }}
       run:
         - python
