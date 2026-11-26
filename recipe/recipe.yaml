@@ -17,6 +17,7 @@ source:
     - remove-dev-tools.patch
     - disable-werror.patch
     - namespace-alias.patch
+    - upstream-cpp-tests.patch
 
 build:
   number: 0
@@ -56,6 +57,8 @@ outputs:
         - pybind11
         - pybind11-abi
         - tbb-devel
+        - doctest
+        - cxxopts
 
   - package:
       name: libusd-exchange
@@ -98,6 +101,7 @@ outputs:
             not_exists:
               - "${{ python_files }}"
               - "${{ devel_files }}"
+              - ${{ 'Library/' if win else '' }}bin/test_usdex_core*
 
   - package:
       name: libusd-exchange-devel
